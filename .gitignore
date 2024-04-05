@@ -1,0 +1,34 @@
+# Go 特有的檔案和目錄
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/_obj/
+/_test/
+/vendor/
+
+# 編譯產生的檔案
+*.test
+*.out
+*.prof
+
+# Go 語言包含的二進位檔
+*.exe
+
+# 程式建置的暫存檔
+*.cache
+*.log
+*.seed
+*.pid
+
+# 已建置的目錄
+/build/
+
+# 本地配置檔案
+/.idea
+/.vscode
+
+# 避免提交依賴管理器（如 go mod 或 dep）生成的檔案
+/Gopkg.lock
+/vendor/

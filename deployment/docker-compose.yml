@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - backend_network
+    volumes:
+      - redis_data:/data
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: examplepassword
+      MYSQL_DATABASE: ads_database
+      MYSQL_USER: ads_user
+      MYSQL_PASSWORD: ads_password
+    ports:
+      - "3306:3306"
+    networks:
+      - backend_network
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: examplepassword
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    networks:
+      - backend_network
+
+  # rabbitmq:
+  #   image: rabbitmq:latest
+  #   hostname: rabbitmq
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   networks:
+  #     - backend_network
+  # 原本想要用，但是壓力測試好像過了，所以先不用
+
+volumes:
+  mysql-data:
+  redis_data:
+  
+
+networks:
+  backend_network:
