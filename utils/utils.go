@@ -56,7 +56,7 @@ var validCountries = map[string]bool{
 	"TO": true, "TT": true, "TN": true, "TR": true, "TM": true, "TC": true, "TV": true, "UG": true,
 	"UA": true, "AE": true, "GB": true, "US": true, "UM": true, "UY": true, "UZ": true, "VU": true,
 	"VE": true, "VN": true, "VG": true, "VI": true, "WF": true, "EH": true, "YE": true, "ZM": true,
-	"ZW": true,
+	"ZW": true, "": true,
 }
 
 func ValidateCountry(country string) bool {

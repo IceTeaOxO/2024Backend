@@ -54,12 +54,8 @@ URL:`127.0.0.1:8080/api/v1/ad`
 <img src="./image/GET-1.png"/>
 
 
-`GET`帶有分頁以及篩選條件
 
-URL:`127.0.0.1:8080/api/v1/ad?offset=0&ageStart=20&ageEnd=30&country=TW&country=US&platform=web&limit=3`
-`
 
-<img src="./image/GET-2.png"/>
 
 
 5. 使用K6或者其他壓力測試軟體測試API
@@ -72,22 +68,15 @@ brew install k6
 
 測試URL:`http://127.0.0.1:8080/api/v1/ad?offset=0&limit=10`
 
-測試分為五個階段，最後一階段一秒鐘發送一萬個request
+測試分為四個階段，最後一階段一秒鐘發送一萬個request
 
 ```
 stages: [
         { duration: "5s", target: 10 },
         { duration: "5s", target: 100 },
         { duration: "5s", target: 1000 },
-        { duration: "5s", target: 1000 },
         { duration: "1s", target: 10000 },
-      ],
-    thresholds: {
-        // 期望在整個測試執行過程中，錯誤率必須低於 5%
-        http_req_failed: ["rate<0.05"],
-        // 平均請求必須在 300ms 內完成，90% 的請求必須在 200ms 內完成
-        http_req_duration: ["avg < 300", "p(90) < 100"],
-      }
+      ]
 ```
 
 本地測試結果如下：
@@ -135,4 +124,6 @@ stages: [
     - K6
     - Locust
 原本想使用現成的JMeter，但是Java出了點問題，所以就改用聽說效能更好的K6了
+
+
 

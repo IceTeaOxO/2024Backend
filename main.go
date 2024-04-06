@@ -23,6 +23,28 @@ func CreateAd(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// 檢查條件參數是否為空，若為空則設置默認值
+	if newAd.Condition.AgeStart == nil {
+		defaultValue := 1
+		newAd.Condition.AgeStart = &defaultValue
+	}
+
+	if newAd.Condition.AgeEnd == nil {
+		defaultValue := 100
+		newAd.Condition.AgeEnd = &defaultValue
+	}
+
+	if len(newAd.Condition.Gender) == 0 {
+		newAd.Condition.Gender = ""
+	}
+
+	if len(newAd.Condition.Country) == 0 {
+		newAd.Condition.Country = []string{}
+	}
+
+	if len(newAd.Condition.Platform) == 0 {
+		newAd.Condition.Platform = []string{}
+	}
 
 	// 參數驗證
 	validAgeStart := *newAd.Condition.AgeStart
@@ -41,7 +63,7 @@ func CreateAd(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	// 驗證country需在ISO_3166-1中
+	// 驗證country需在ISO_3166-1中，或者為空
 	for _, country := range newAd.Condition.Country {
 		if !utils.ValidateCountry(country) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid country code: " + country})
@@ -61,6 +83,7 @@ func CreateAd(c *gin.Context) {
 	ageStart = newAd.Condition.AgeStart
 	ageEnd = newAd.Condition.AgeEnd
 	gender = newAd.Condition.Gender
+
 	// 將StringArray轉換為String
 	var countryStr string
 	if len(newAd.Condition.Country) > 0 {
@@ -99,8 +122,7 @@ func GetAds(c *gin.Context) {
 	// 解析查詢參數
 	offsetStr := c.DefaultQuery("offset", "0")
 	limitStr := c.DefaultQuery("limit", "5")
-	ageStartStr := c.DefaultQuery("ageStart", "1")
-	ageEndStr := c.DefaultQuery("ageEnd", "100")
+	ageStr := c.DefaultQuery("age", "1")
 	gender := c.DefaultQuery("gender", "")
 	countryArr, _ := c.GetQueryArray("country")
 	platformArr, _ := c.GetQueryArray("platform")
@@ -108,8 +130,7 @@ func GetAds(c *gin.Context) {
 	// 轉換成整數方便驗證
 	offset, _ := strconv.Atoi(offsetStr)
 	limit, _ := strconv.Atoi(limitStr)
-	ageStart, _ := strconv.Atoi(ageStartStr)
-	ageEnd, _ := strconv.Atoi(ageEndStr)
+	age, _ := strconv.Atoi(ageStr)
 
 	var countryStr string
 	if len(countryArr) > 0 {
@@ -129,7 +150,7 @@ func GetAds(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := utils.ValidateAgeRange(ageStart, ageEnd); err != nil {
+	if err := utils.ValidateAge(age); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -151,7 +172,7 @@ func GetAds(c *gin.Context) {
 	}
 
 	// 構建 Redis 緩存鍵
-	cacheKey := "get:offset=" + offsetStr + "&limit=" + limitStr + "&ageStart=" + ageStartStr + "&ageEnd=" + ageEndStr + "&gender=" + gender + "&country=" + countryStr + "&platform=" + platformStr
+	cacheKey := "get:offset=" + offsetStr + "&limit=" + limitStr + "&age=" + ageStr + "&gender=" + gender + "&country=" + countryStr + "&platform=" + platformStr
 
 	// 從 Redis 緩存中獲取結果
 	cachedResult, err := redis.GetFromCache(cacheKey)
@@ -166,12 +187,8 @@ func GetAds(c *gin.Context) {
 	// 只查詢活動中的廣告
 	query := "SELECT * FROM ad WHERE NOW() > StartAt AND NOW() < EndAt"
 
-	if ageStartStr != "" && ageEndStr != "" {
-		query += fmt.Sprintf(" AND AgeStart >= %s AND AgeEnd <= %s", ageStartStr, ageEndStr)
-	} else if ageStartStr != "" {
-		query += fmt.Sprintf(" AND AgeStart >= %s", ageStartStr)
-	} else if ageEndStr != "" {
-		query += fmt.Sprintf(" AND AgeEnd <= %s", ageEndStr)
+	if ageStr != "" {
+		query += fmt.Sprintf(" AND %d BETWEEN AgeStart AND AgeEnd", age)
 	}
 	if gender != "" {
 		query += fmt.Sprintf(" AND Gender = '%s'", gender)
@@ -212,7 +229,7 @@ func GetAds(c *gin.Context) {
 	adsStr := string(adsJSON)
 
 	// 將結果存入 Redis 緩存
-	err = redis.SetToCache(cacheKey, adsStr, 10*time.Minute) // 設定 10 分鐘過期時間
+	err = redis.SetToCache(cacheKey, adsStr, 5*time.Minute) // 設定 5 分鐘過期時間
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
